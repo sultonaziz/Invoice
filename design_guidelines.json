@@ -1,0 +1,138 @@
+{
+  "theme": "light",
+  "archetype": "Archetype 1: Organic & Earthy",
+  "design_philosophy": "Functional Minimalism & Trust-First Design. This mobile app for Indonesian UMKM (Small/Medium Businesses) and freelancers avoids the sterile, cold 'SaaS tech' look. Instead, it leans into 'membumi' (grounded/down-to-earth) aesthetics using warm stone whites, deep forest greens, and high-legibility typography suitable for financial tracking. The UI must feel instantly familiar, fast for one-handed mobile use, and project professional credibility when sending invoices to clients.",
+  "colors": {
+    "background": {
+      "default": "#FAFAF9",
+      "surface": "#FFFFFF",
+      "bottom_sheet": "#FFFFFF"
+    },
+    "primary": {
+      "DEFAULT": "#166534",
+      "hover": "#14532D",
+      "foreground": "#FFFFFF",
+      "description": "Deep Forest Green. Conveys growth, wealth, and local familiarity (similar to major Indonesian super-apps)."
+    },
+    "accent": {
+      "DEFAULT": "#C2410C",
+      "foreground": "#FFFFFF",
+      "description": "Terracotta. Used for overdue states, urgent nudges, and destructive actions."
+    },
+    "neutral": {
+      "900": "#1C1917",
+      "700": "#44403C",
+      "500": "#78716C",
+      "200": "#E7E5E4",
+      "100": "#F5F5F4"
+    },
+    "status": {
+      "draft": { "bg": "#F5F5F4", "text": "#44403C" },
+      "sent": { "bg": "#EFF6FF", "text": "#1D4ED8" },
+      "paid": { "bg": "#F0FDF4", "text": "#15803D" },
+      "overdue": { "bg": "#FEF2F2", "text": "#B91C1C" }
+    }
+  },
+  "typography": {
+    "font_families": {
+      "heading": "Manrope",
+      "body": "IBM Plex Sans",
+      "numbers": "IBM Plex Sans"
+    },
+    "hierarchy": {
+      "h1_screen_title": "text-3xl font-bold tracking-tight text-neutral-900",
+      "h2_section_title": "text-xl font-semibold tracking-tight text-neutral-900",
+      "h3_card_title": "text-lg font-medium text-neutral-900",
+      "body_base": "text-base font-normal text-neutral-700 leading-relaxed",
+      "body_sm": "text-sm font-normal text-neutral-500",
+      "financial_large": "text-4xl font-semibold tracking-tighter text-primary",
+      "overline": "text-xs font-bold uppercase tracking-[0.15em] text-neutral-500"
+    },
+    "rules": [
+      "Use IBM Plex Sans for all numeric displays (invoice totals, PPN, dates) to ensure tabular lining and crisp readability.",
+      "Headings must use Manrope for a rounded, approachable, yet professional tone.",
+      "Never center-align financial totals; always right-align them in lists/tables."
+    ]
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing, Cardless Hierarchy.",
+    "container": "px-6 py-8",
+    "mobile_specifics": [
+      "Use bottom-sheet patterns for 'Add Line Item' and 'Change Status' instead of full-page navigation.",
+      "Main Call-to-Action (CTA) buttons must be sticky at the bottom of the screen (pb-safe + 4) for easy thumb reach.",
+      "Avoid heavy drop shadows. Use 1px borders (border-neutral-200) to separate list items."
+    ],
+    "grids": {
+      "dashboard_summary": "grid grid-cols-2 gap-4",
+      "invoice_items": "flex flex-col gap-4"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-white h-14 rounded-xl font-semibold flex items-center justify-center text-lg active:scale-[0.98]",
+      "secondary": "bg-white border border-neutral-200 text-neutral-900 h-14 rounded-xl font-medium flex items-center justify-center active:bg-neutral-50",
+      "whatsapp_share": "bg-[#25D366] text-white h-14 rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98]"
+    },
+    "inputs": {
+      "text_field": "bg-neutral-100 border-0 rounded-xl px-4 py-4 text-base text-neutral-900 placeholder:text-neutral-500 focus:ring-2 focus:ring-primary/20",
+      "amount_field": "bg-white border-b-2 border-neutral-200 px-0 py-4 text-3xl font-semibold text-neutral-900 placeholder:text-neutral-300 focus:border-primary text-right"
+    },
+    "cards": {
+      "invoice_list_item": "bg-white border border-neutral-200 rounded-2xl p-5 flex flex-col gap-2 active:bg-neutral-50",
+      "client_item": "bg-white border-b border-neutral-100 py-4 flex items-center justify-between"
+    },
+    "navigation": {
+      "bottom_tab": "bg-white border-t border-neutral-200 h-20 pb-safe pt-2 flex justify-around items-center"
+    },
+    "status_badge": "px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+  },
+  "motion": {
+    "transitions": "Spring animations for screen transitions and bottom sheets.",
+    "interactions": [
+      "Subtle scale-down (0.98) on button press.",
+      "Smooth height animation when toggling PPN on/off in the invoice builder.",
+      "Skeleton loaders for fetching invoice lists instead of native spinners."
+    ]
+  },
+  "icons_and_assets": {
+    "library": "lucide-react-native",
+    "usage_rules": [
+      "Use stroke-width 2 for standard icons.",
+      "Use filled variants only for active states in Bottom Tab Navigation.",
+      "Key icons: FileText (Invoices), Users (Clients), Building (Profile), Send (Share), Receipt (PDF Preview)."
+    ]
+  },
+  "accessibility_and_testing": {
+    "contrast": "Ensure all text meets WCAG AA standards. Neutral-500 is the lightest allowed text on Neutral-100 backgrounds.",
+    "touch_targets": "Minimum 48x48 logical pixels for all clickable elements.",
+    "testing_attributes": [
+      "data-testid=\"login-google-btn\"",
+      "data-testid=\"nav-invoices-tab\"",
+      "data-testid=\"invoice-create-btn\"",
+      "data-testid=\"invoice-status-toggle\"",
+      "data-testid=\"whatsapp-share-btn\"",
+      "data-testid=\"pdf-preview-btn\""
+    ]
+  },
+  "media": {
+    "image_urls": {
+      "auth_hero": {
+        "url": "https://images.unsplash.com/photo-1664575196851-5318f32c3f43?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwxfHxpbmRvbmVzaWFuJTIwZnJlZWxhbmNlciUyMHdvcmtpbmd8ZW58MHx8fHwxNzgxMjM2NzA2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Image of a freelancer working on a laptop. Use as the hero/background image on the Google Auth Login screen with a gradient overlay (black/40) for text legibility."
+      },
+      "empty_state_invoices": {
+        "url": "https://images.unsplash.com/photo-1777861845988-1914a1588676?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwyfHxpbmRvbmVzaWFuJTIwZnJlZWxhbmNlciUyMHdvcmtpbmd8ZW58MHx8fHwxNzgxMjM2NzA2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Close-up of a desk setup. Use selectively for empty states or onboarding."
+      }
+    }
+  },
+  "instructions_to_main_agent": [
+    "This is an Expo React Native mobile application. Apply these design guidelines using standard React Native StyleSheet or NativeWind (Tailwind for React Native) if configured.",
+    "Do not build a generic web dashboard layout. Ensure 'sticky bottom actions', 'safe area padding (pb-safe/pt-safe)', and mobile-native scrolling.",
+    "The Home/Dashboard screen should focus heavily on the 'Total Tagihan' (Total Receivables) in large `financial_large` text, followed by the filterable list of invoices.",
+    "The PDF template for `expo-print` must look hyper-professional, using the saved business profile (logo, NPWP, signature). Format currency strictly to Indonesian Rupiah (Rp X.XXX.XXX).",
+    "WhatsApp integration is paramount: the CTA should be highly prominent and utilize the `#25D366` brand color, triggering the `Linking.openURL` with the pre-filled Bahasa Indonesia message.",
+    "NEVER use placeholder text for logos or images. Use the provided Unsplash URLs or handle them via Expo Image Picker for user uploads.",
+    "Ensure all interactive elements have `data-testid` properties for robust testing."
+  ]
+}
