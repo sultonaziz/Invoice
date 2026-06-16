@@ -16,14 +16,38 @@ export default function TabsLayout() {
           paddingTop: 8,
           paddingBottom: 28,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "600", marginTop: 2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: "600", marginTop: 2 },
       }}
     >
+      <Tabs.Screen
+        name="reservations"
+        options={{
+          title: "Reservasi",
+          tabBarIcon: ({ color, size }) => <Feather name="calendar" size={size - 4} color={color} />,
+          tabBarTestID: "nav-reservations-tab",
+        }}
+      />
+      <Tabs.Screen
+        name="fleet"
+        options={{
+          title: "Armada",
+          tabBarIcon: ({ color, size }) => <Feather name="truck" size={size - 4} color={color} />,
+          tabBarTestID: "nav-fleet-tab",
+        }}
+      />
+      <Tabs.Screen
+        name="drivers"
+        options={{
+          title: "Driver",
+          tabBarIcon: ({ color, size }) => <Feather name="user" size={size - 4} color={color} />,
+          tabBarTestID: "nav-drivers-tab",
+        }}
+      />
       <Tabs.Screen
         name="invoices"
         options={{
           title: "Invoice",
-          tabBarIcon: ({ color, size }) => <Feather name="file-text" size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Feather name="file-text" size={size - 4} color={color} />,
           tabBarTestID: "nav-invoices-tab",
         }}
       />
@@ -31,7 +55,7 @@ export default function TabsLayout() {
         name="clients"
         options={{
           title: "Klien",
-          tabBarIcon: ({ color, size }) => <Feather name="users" size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Feather name="users" size={size - 4} color={color} />,
           tabBarTestID: "nav-clients-tab",
         }}
       />
@@ -39,7 +63,7 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: "Profil",
-          tabBarIcon: ({ color, size }) => <Feather name="briefcase" size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Feather name="briefcase" size={size - 4} color={color} />,
           tabBarTestID: "nav-profile-tab",
         }}
       />
