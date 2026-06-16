@@ -90,7 +90,12 @@ class BusinessProfile(BaseModel):
     email: str = ""
     logo_base64: str = ""
     signature_base64: str = ""
+    signature_qr_base64: str = ""  # QR code for digital signature
     bank_info: str = ""
+    # Admin notification settings for reminders
+    admin_whatsapp: str = ""
+    admin_email: str = ""
+    reminder_enabled: bool = True
     updated_at: datetime = Field(default_factory=now_utc)
 
 
@@ -102,7 +107,11 @@ class BusinessProfileUpdate(BaseModel):
     email: Optional[str] = None
     logo_base64: Optional[str] = None
     signature_base64: Optional[str] = None
+    signature_qr_base64: Optional[str] = None
     bank_info: Optional[str] = None
+    admin_whatsapp: Optional[str] = None
+    admin_email: Optional[str] = None
+    reminder_enabled: Optional[bool] = None
 
 
 class Client(BaseModel):
@@ -1300,3 +1309,162 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     client.close()
+
+
+# ---------- Automatic Reminder System ----------
+@api.post("/reminders/trigger")
+async def trigger_reminders():
+    """
+    Trigger reminder notifications for all users.
+    This endpoint should be called by a cron job every day.
+    It will send reminders to admin WhatsApp/Email for reservations departing in 2 days.
+    """
+    today = now_utc().date()
+    reminder_date = (today + timedelta(days=2)).strftime("%Y-%m-%d")
+    today_str = today.strftime("%Y-%m-%d")
+    
+    # Get all business profiles with reminder enabled
+    profiles_cursor = db.business_profiles.find(
+        {"reminder_enabled": True},
+        {"_id": 0}
+    )
+    profiles = await profiles_cursor.to_list(1000)
+    
+    results = []
+    for profile in profiles:
+        user_id = profile.get("user_id")
+        admin_wa = profile.get("admin_whatsapp", "")
+        admin_email = profile.get("admin_email", "")
+        
+        if not admin_wa and not admin_email:
+            continue
+        
+        # Get reservations that need reminder
+        cursor = db.reservations.find(
+            {
+                "user_id": user_id,
+                "departure_date": {"$lte": reminder_date, "$gte": today_str},
+                "status": {"$in": ["booked", "downpayment"]},
+            },
+            {"_id": 0}
+        ).sort("departure_date", 1)
+        
+        reservations = await cursor.to_list(100)
+        
+        if not reservations:
+            continue
+        
+        # Build reminder message
+        reminder_messages = []
+        for rsv in reservations:
+            client_name = rsv.get("client_snapshot", {}).get("name", "Tanpa klien")
+            bus_name = rsv.get("bus_snapshot", {}).get("name", "Bus")
+            departure = rsv.get("departure_date", "")
+            status = rsv.get("status", "booked")
+            total = rsv.get("total_price", 0)
+            dp = rsv.get("downpayment", 0)
+            remaining = total - dp if status == "downpayment" else total
+            
+            pickup = rsv.get("pickup", {})
+            pickup_complete = all([
+                pickup.get("pic_name"),
+                pickup.get("address"),
+                pickup.get("standby_time")
+            ])
+            
+            msg = f"📅 {departure}\n"
+            msg += f"👤 {client_name}\n"
+            msg += f"🚌 {bus_name}\n"
+            msg += f"💰 Sisa: Rp {remaining:,.0f}\n"
+            if not pickup_complete:
+                msg += "⚠️ Detail pickup belum lengkap\n"
+            
+            reminder_messages.append(msg)
+        
+        if reminder_messages:
+            full_message = f"🔔 *REMINDER H-2 KEBERANGKATAN*\n\n"
+            full_message += f"Anda memiliki {len(reminder_messages)} reservasi yang perlu diperhatikan:\n\n"
+            full_message += "\n---\n".join(reminder_messages)
+            full_message += "\n\nSilakan pastikan pembayaran lunas dan detail pickup lengkap."
+            
+            results.append({
+                "user_id": user_id,
+                "admin_whatsapp": admin_wa,
+                "admin_email": admin_email,
+                "reservations_count": len(reservations),
+                "message": full_message,
+            })
+    
+    return {
+        "triggered_at": now_utc().isoformat(),
+        "reminders_sent": len(results),
+        "details": results
+    }
+
+
+@api.get("/reminders/preview")
+async def preview_reminder(user: dict = Depends(get_current_user)):
+    """Preview what the reminder message would look like for current user."""
+    profile = await db.business_profiles.find_one(
+        {"user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    
+    if not profile:
+        return {"message": "Profil bisnis belum diatur", "reminders": []}
+    
+    today = now_utc().date()
+    reminder_date = (today + timedelta(days=2)).strftime("%Y-%m-%d")
+    today_str = today.strftime("%Y-%m-%d")
+    
+    cursor = db.reservations.find(
+        {
+            "user_id": user["user_id"],
+            "departure_date": {"$lte": reminder_date, "$gte": today_str},
+            "status": {"$in": ["booked", "downpayment"]},
+        },
+        {"_id": 0}
+    ).sort("departure_date", 1)
+    
+    reservations = await cursor.to_list(100)
+    
+    if not reservations:
+        return {
+            "message": "Tidak ada reservasi yang memerlukan reminder",
+            "reminders": [],
+            "admin_whatsapp": profile.get("admin_whatsapp", ""),
+            "admin_email": profile.get("admin_email", ""),
+        }
+    
+    reminder_items = []
+    for rsv in reservations:
+        client_name = rsv.get("client_snapshot", {}).get("name", "Tanpa klien")
+        bus_name = rsv.get("bus_snapshot", {}).get("name", "Bus")
+        pickup = rsv.get("pickup", {})
+        pickup_complete = all([
+            pickup.get("pic_name"),
+            pickup.get("address"),
+            pickup.get("standby_time")
+        ])
+        
+        reminder_items.append({
+            "id": rsv.get("id"),
+            "client_name": client_name,
+            "bus_name": bus_name,
+            "departure_date": rsv.get("departure_date"),
+            "status": rsv.get("status"),
+            "total_price": rsv.get("total_price", 0),
+            "downpayment": rsv.get("downpayment", 0),
+            "remaining": rsv.get("total_price", 0) - rsv.get("downpayment", 0) if rsv.get("status") == "downpayment" else rsv.get("total_price", 0),
+            "pickup_complete": pickup_complete,
+            "reasons": rsv.get("reminder_reasons", [])
+        })
+    
+    return {
+        "message": f"Ada {len(reminder_items)} reservasi yang memerlukan perhatian",
+        "reminders": reminder_items,
+        "admin_whatsapp": profile.get("admin_whatsapp", ""),
+        "admin_email": profile.get("admin_email", ""),
+        "reminder_enabled": profile.get("reminder_enabled", True),
+    }
+

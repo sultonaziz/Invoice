@@ -131,6 +131,7 @@ export const api = {
   getReservationCalendar: (year: number, month: number) =>
     request<any[]>(`/reservations/calendar?year=${year}&month=${month}`),
   getReservationReminders: () => request<any[]>("/reservations/reminders"),
+  getRemindersPreview: () => request<any>("/reminders/preview"),
   reservationToInvoice: (id: string) =>
     request<{ invoice: any; message: string }>(`/reservations/${id}/to-invoice`, { method: "POST" }),
   getMonthlyReservationSummary: (year: number, month: number) =>
