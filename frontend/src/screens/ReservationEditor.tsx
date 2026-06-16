@@ -320,7 +320,7 @@ export default function ReservationEditor() {
             {buses.length === 0 && (
               <TouchableOpacity
                 style={styles.addLink}
-                onPress={() => router.push("/fleet")}
+                onPress={() => router.push("/(tabs)/fleet")}
               >
                 <Feather name="plus" size={14} color={colors.primary} />
                 <Text style={styles.addLinkText}>Tambah Armada</Text>
@@ -376,7 +376,7 @@ export default function ReservationEditor() {
             {drivers.length === 0 && (
               <TouchableOpacity
                 style={styles.addLink}
-                onPress={() => router.push("/driver")}
+                onPress={() => router.push("/(tabs)/drivers")}
               >
                 <Feather name="plus" size={14} color={colors.primary} />
                 <Text style={styles.addLinkText}>Tambah Driver</Text>

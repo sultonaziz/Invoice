@@ -819,6 +819,43 @@ async def delete_driver(driver_id: str, user: dict = Depends(get_current_user)):
 
 
 # ---------- Reservations ----------
+async def check_double_booking(user_id: str, bus_id: str, start_date: str, end_date: str, exclude_reservation_id: str = None):
+    """Check if bus is already booked for overlapping dates."""
+    query = {
+        "user_id": user_id,
+        "bus_id": bus_id,
+        "status": {"$ne": "cancel"},  # Ignore cancelled reservations
+        "$or": [
+            # New reservation starts during existing reservation
+            {"departure_date": {"$lte": start_date}, "$or": [
+                {"return_date": {"$gte": start_date}},
+                {"return_date": "", "departure_date": start_date}
+            ]},
+            # New reservation ends during existing reservation
+            {"departure_date": {"$lte": end_date}, "$or": [
+                {"return_date": {"$gte": end_date}},
+                {"return_date": ""}
+            ]},
+            # Existing reservation is within new reservation
+            {"departure_date": {"$gte": start_date, "$lte": end_date}},
+        ]
+    }
+    
+    if exclude_reservation_id:
+        query["id"] = {"$ne": exclude_reservation_id}
+    
+    existing = await db.reservations.find_one(query, {"_id": 0})
+    if existing:
+        bus = await db.buses.find_one({"id": bus_id}, {"_id": 0})
+        bus_name = bus.get("name", "Bus") if bus else "Bus"
+        raise HTTPException(
+            status_code=409, 
+            detail=f"Bus '{bus_name}' sudah dibooking pada tanggal {existing['departure_date']}" + 
+                   (f" - {existing['return_date']}" if existing.get('return_date') else "") +
+                   ". Silakan pilih tanggal atau bus lain."
+        )
+
+
 async def get_reservation_snapshots(user_id: str, client_id: str = None, bus_id: str = None, driver_id: str = None):
     """Helper to fetch snapshots for reservation."""
     client_snap, bus_snap, driver_snap = {}, {}, {}
@@ -855,6 +892,10 @@ async def list_reservations(
 
 @api.post("/reservations")
 async def create_reservation(body: ReservationCreate, user: dict = Depends(get_current_user)):
+    # Check for double booking on same bus and overlapping dates
+    if body.bus_id:
+        await check_double_booking(user["user_id"], body.bus_id, body.departure_date, body.return_date or body.departure_date, None)
+    
     client_snap, bus_snap, driver_snap = await get_reservation_snapshots(
         user["user_id"], body.client_id, body.bus_id, body.driver_id
     )
@@ -947,6 +988,101 @@ async def reservations_reminders(user: dict = Depends(get_current_user)):
     return reservations
 
 
+@api.get("/reservations/monthly-summary")
+async def reservations_monthly_summary(
+    year: int,
+    month: int,
+    user: dict = Depends(get_current_user)
+):
+    """Get monthly summary of all reservations for overview."""
+    start_date = f"{year:04d}-{month:02d}-01"
+    if month == 12:
+        end_date = f"{year + 1:04d}-01-01"
+    else:
+        end_date = f"{year:04d}-{month + 1:02d}-01"
+    
+    cursor = db.reservations.find(
+        {
+            "user_id": user["user_id"],
+            "$or": [
+                {"departure_date": {"$gte": start_date, "$lt": end_date}},
+                {"return_date": {"$gte": start_date, "$lt": end_date}},
+                {
+                    "departure_date": {"$lt": start_date},
+                    "return_date": {"$gte": end_date}
+                }
+            ]
+        },
+        {"_id": 0}
+    ).sort("departure_date", 1)
+    
+    reservations = await cursor.to_list(1000)
+    
+    # Calculate summary
+    total_reservations = len(reservations)
+    total_revenue = sum(r.get("total_price", 0) for r in reservations if r.get("status") != "cancel")
+    total_paid = sum(r.get("total_price", 0) for r in reservations if r.get("status") == "paid")
+    total_dp = sum(r.get("downpayment", 0) for r in reservations if r.get("status") == "downpayment")
+    pending_payment = total_revenue - total_paid - total_dp
+    
+    by_status = {}
+    for rsv in reservations:
+        status = rsv.get("status", "booked")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    return {
+        "year": year,
+        "month": month,
+        "total_reservations": total_reservations,
+        "total_revenue": total_revenue,
+        "total_paid": total_paid,
+        "total_dp": total_dp,
+        "pending_payment": pending_payment,
+        "by_status": by_status,
+        "reservations": reservations
+    }
+
+
+@api.get("/reservations/check-availability")
+async def check_bus_availability(
+    bus_id: str,
+    start_date: str,
+    end_date: str = None,
+    exclude_id: str = None,
+    user: dict = Depends(get_current_user)
+):
+    """Check if a bus is available for given dates."""
+    if not end_date:
+        end_date = start_date
+    
+    query = {
+        "user_id": user["user_id"],
+        "bus_id": bus_id,
+        "status": {"$ne": "cancel"},
+        "$or": [
+            {"departure_date": {"$lte": start_date}, "$or": [
+                {"return_date": {"$gte": start_date}},
+                {"return_date": "", "departure_date": start_date}
+            ]},
+            {"departure_date": {"$lte": end_date}, "$or": [
+                {"return_date": {"$gte": end_date}},
+                {"return_date": ""}
+            ]},
+            {"departure_date": {"$gte": start_date, "$lte": end_date}},
+        ]
+    }
+    
+    if exclude_id:
+        query["id"] = {"$ne": exclude_id}
+    
+    conflicting = await db.reservations.find(query, {"_id": 0}).to_list(10)
+    
+    return {
+        "available": len(conflicting) == 0,
+        "conflicts": conflicting
+    }
+
+
 @api.get("/reservations/{reservation_id}")
 async def get_reservation(reservation_id: str, user: dict = Depends(get_current_user)):
     doc = await db.reservations.find_one(
@@ -970,6 +1106,18 @@ async def update_reservation(
         raise HTTPException(status_code=404, detail="Reservasi tidak ditemukan")
     
     updates = {k: v for k, v in body.dict().items() if v is not None}
+    
+    # Check for double booking if bus_id or dates changed
+    bus_id = updates.get("bus_id", doc.get("bus_id"))
+    departure_date = updates.get("departure_date", doc.get("departure_date"))
+    return_date = updates.get("return_date", doc.get("return_date")) or departure_date
+    
+    if bus_id and (
+        "bus_id" in updates or 
+        "departure_date" in updates or 
+        "return_date" in updates
+    ):
+        await check_double_booking(user["user_id"], bus_id, departure_date, return_date, reservation_id)
     
     # Update snapshots if IDs changed
     if "client_id" in updates or "bus_id" in updates or "driver_id" in updates:

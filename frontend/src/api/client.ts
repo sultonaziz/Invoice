@@ -133,4 +133,12 @@ export const api = {
   getReservationReminders: () => request<any[]>("/reservations/reminders"),
   reservationToInvoice: (id: string) =>
     request<{ invoice: any; message: string }>(`/reservations/${id}/to-invoice`, { method: "POST" }),
+  getMonthlyReservationSummary: (year: number, month: number) =>
+    request<any>(`/reservations/monthly-summary?year=${year}&month=${month}`),
+  checkBusAvailability: (busId: string, startDate: string, endDate?: string, excludeId?: string) => {
+    let url = `/reservations/check-availability?bus_id=${busId}&start_date=${startDate}`;
+    if (endDate) url += `&end_date=${endDate}`;
+    if (excludeId) url += `&exclude_id=${excludeId}`;
+    return request<{ available: boolean; conflicts: any[] }>(url);
+  },
 };

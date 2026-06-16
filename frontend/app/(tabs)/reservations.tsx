@@ -98,6 +98,14 @@ export default function ReservationsScreen() {
           <Text style={styles.title}>Reservasi</Text>
         </View>
         <TouchableOpacity
+          testID="reservation-monthly-btn"
+          style={styles.iconBtnGhost}
+          onPress={() => router.push("/reservation/monthly")}
+          activeOpacity={0.7}
+        >
+          <Feather name="bar-chart-2" size={20} color={colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
           testID="reservation-calendar-btn"
           style={styles.iconBtnGhost}
           onPress={() => router.push("/reservation/calendar")}
