@@ -95,13 +95,32 @@ export default function InvoiceDetail() {
   const sharePDF = async () => {
     setBusy(true);
     try {
-      const uri = await generatePDF();
-      if (!uri) return;
+      const html = buildInvoiceHTML(invoice, profile);
+      
       if (Platform.OS === "web") {
-        // On web, printToFileAsync may not work; fallback to print preview
-        await Print.printAsync({ html: buildInvoiceHTML(invoice, profile) });
+        // On web, open print dialog directly
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+          printWindow.document.write(html);
+          printWindow.document.close();
+          printWindow.focus();
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        } else {
+          // Fallback if popup blocked
+          await Print.printAsync({ html });
+        }
         return;
       }
+      
+      // Native platforms
+      const { uri } = await Print.printToFileAsync({ html });
+      if (!uri) {
+        showToast("Gagal membuat PDF");
+        return;
+      }
+      
       const available = await Sharing.isAvailableAsync();
       if (available) {
         await Sharing.shareAsync(uri, {
@@ -112,6 +131,9 @@ export default function InvoiceDetail() {
       } else {
         showToast("Berbagi tidak tersedia di perangkat ini");
       }
+    } catch (e) {
+      console.warn("pdf error", e);
+      showToast("Gagal membuat PDF");
     } finally {
       setBusy(false);
     }

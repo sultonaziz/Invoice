@@ -54,13 +54,26 @@ export default function ReservationsScreen() {
     }, [load])
   );
 
-  const filtered = useMemo(
-    () =>
-      filter === "all"
-        ? reservations
-        : reservations.filter((r) => r.status === filter),
-    [filter, reservations]
-  );
+  // Sort: non-cancelled by departure date (soonest first), cancelled at bottom
+  const filtered = useMemo(() => {
+    let data = filter === "all"
+      ? reservations
+      : reservations.filter((r) => r.status === filter);
+    
+    // Sort logic: 
+    // 1. Non-cancelled reservations first, sorted by departure_date (soonest first)
+    // 2. Cancelled reservations at the bottom, sorted by created_at (newest first)
+    return data.sort((a, b) => {
+      // Cancelled reservations go to bottom
+      if (a.status === "cancel" && b.status !== "cancel") return 1;
+      if (a.status !== "cancel" && b.status === "cancel") return -1;
+      
+      // Both cancelled or both non-cancelled - sort by departure date
+      const dateA = new Date(a.departure_date || a.created_at || 0).getTime();
+      const dateB = new Date(b.departure_date || b.created_at || 0).getTime();
+      return dateA - dateB; // Soonest departure first
+    });
+  }, [filter, reservations]);
 
   const totalBookings = useMemo(
     () => reservations.filter((r) => r.status !== "cancel").length,

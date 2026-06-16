@@ -1,22 +1,26 @@
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Image } from "react-native";
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Image, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { colors } from "@/src/theme";
 
+const { width, height } = Dimensions.get("window");
+
 export default function Login() {
   const { loginWithGoogle, loading } = useAuth();
 
   return (
     <View style={styles.root} testID="login-screen">
+      {/* Bus image positioned to show the bus properly */}
       <Image
         source={require("@/assets/images/bus-laks.jpg")}
-        style={StyleSheet.absoluteFill}
+        style={styles.busImage}
         resizeMode="cover"
       />
       <LinearGradient
-        colors={["rgba(30,64,175,0.2)", "rgba(30,64,175,0.75)", "#1E40AF"]}
+        colors={["transparent", "rgba(30,64,175,0.3)", "rgba(30,64,175,0.85)", "#1E40AF"]}
+        locations={[0, 0.3, 0.6, 1]}
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView edges={["top", "bottom"]} style={styles.safe}>
@@ -66,6 +70,13 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.primary },
+  busImage: {
+    position: "absolute",
+    width: width * 1.5,
+    height: height * 0.75,
+    top: -50,
+    left: -width * 0.25,
+  },
   safe: { flex: 1, justifyContent: "space-between", paddingHorizontal: 24 },
   top: { flexDirection: "row", alignItems: "center", paddingTop: 24, gap: 12 },
   logoWrap: {
